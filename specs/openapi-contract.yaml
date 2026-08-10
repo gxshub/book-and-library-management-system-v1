@@ -1,0 +1,441 @@
+openapi: 3.0.3
+info:
+  title: Microservice Library Application API Specification
+  description: OpenAPI 3.0 specification for Book Service and Library Service microservices based on user stories.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8081/api/v1
+    description: Book Service Local Development Server
+  - url: http://localhost:8082/api/v1
+    description: Library Service Local Development Server
+
+tags:
+  - name: Book Service
+    description: Master catalog management endpoints
+  - name: Library Service
+    description: Branch inventory, search, and borrow/return transaction endpoints
+
+paths:
+  # ==========================================
+  # BOOK SERVICE ENDPOINTS
+  # ==========================================
+  /books:
+    post:
+      tags:
+        - Book Service
+      summary: Create a new book (Feature B1)
+      operationId: createBook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookCreateRequest'
+      responses:
+        '201':
+          description: Book created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Book with this ISBN already exists
+
+    get:
+      tags:
+        - Book Service
+      summary: List all books (Feature B2)
+      operationId: listAllBooks
+      responses:
+        '200':
+          description: A list of all books in the catalog
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BookResponse'
+
+  /books/{isbn}:
+    get:
+      tags:
+        - Book Service
+      summary: Get a book's information by ISBN (Feature B1)
+      operationId: getBookByIsbn
+      parameters:
+        - name: isbn
+          in: path
+          required: true
+          description: Unique ISBN identifier of the book
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Book details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - Book Service
+      summary: Update an existing book's information (Feature B1)
+      operationId: updateBook
+      parameters:
+        - name: isbn
+          in: path
+          required: true
+          description: Unique ISBN identifier of the book to update
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookUpdateRequest'
+      responses:
+        '200':
+          description: Book updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags:
+        - Book Service
+      summary: Delete a book record by ISBN (Feature B1)
+      operationId: deleteBook
+      parameters:
+        - name: isbn
+          in: path
+          required: true
+          description: Unique ISBN identifier of the book to delete
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Book deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ==========================================
+  # LIBRARY SERVICE ENDPOINTS
+  # ==========================================
+  /libraries/by-isbn/{isbn}:
+    get:
+      tags:
+        - Library Service
+      summary: Find libraries where a book with a specific ISBN is available (Feature L1)
+      operationId: findLibrariesByIsbn
+      parameters:
+        - name: isbn
+          in: path
+          required: true
+          description: ISBN of the book to locate across libraries
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of libraries where the book is available
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LibraryAvailabilityResponse'
+
+  /libraries/{libraryId}/books/{isbn}/availability:
+    get:
+      tags:
+        - Library Service
+      summary: Check availability of a specific book in a library (Feature L2)
+      operationId: checkBookAvailability
+      parameters:
+        - name: libraryId
+          in: path
+          required: true
+          description: Unique ID of the library branch
+          schema:
+            type: string
+        - name: isbn
+          in: path
+          required: true
+          description: ISBN of the book
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Availability status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookAvailabilityResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /libraries/{libraryId}/books/{isbn}/borrow:
+    post:
+      tags:
+        - Library Service
+      summary: Borrow a book from a library (Feature L3)
+      description: |
+        Executes book borrowing workflow.
+        Includes an inter-service validation call to Book Service (GET /books/{isbn}) to ensure the book exists in the master catalog before checking inventory.
+      operationId: borrowBook
+      parameters:
+        - name: libraryId
+          in: path
+          required: true
+          description: Unique ID of the library branch
+          schema:
+            type: string
+        - name: isbn
+          in: path
+          required: true
+          description: ISBN of the book to borrow
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BorrowBookRequest'
+      responses:
+        '201':
+          description: Book borrowed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BorrowRecordResponse'
+        '400':
+          description: Bad request or book not available to borrow
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Book or library not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /libraries/{libraryId}/books/{isbn}/return:
+    post:
+      tags:
+        - Library Service
+      summary: Return a borrowed book to the same library (Feature L4)
+      operationId: returnBook
+      parameters:
+        - name: libraryId
+          in: path
+          required: true
+          description: Unique ID of the library branch
+          schema:
+            type: string
+        - name: isbn
+          in: path
+          required: true
+          description: ISBN of the book being returned
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReturnBookRequest'
+      responses:
+        '200':
+          description: Book returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BorrowRecordResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+# ==========================================
+# COMPONENTS & SCHEMAS
+# ==========================================
+components:
+  schemas:
+    # Book Service Schemas
+    BookCreateRequest:
+      type: object
+      required:
+        - isbn
+        - title
+        - author
+      properties:
+        isbn:
+          type: string
+          example: "978-0134685991"
+        title:
+          type: string
+          example: "Effective Java"
+        author:
+          type: string
+          example: "Joshua Bloch"
+
+    BookUpdateRequest:
+      type: object
+      required:
+        - title
+        - author
+      properties:
+        title:
+          type: string
+          example: "Effective Java (3rd Edition)"
+        author:
+          type: string
+          example: "Joshua Bloch"
+
+    BookResponse:
+      type: object
+      properties:
+        isbn:
+          type: string
+          example: "978-0134685991"
+        title:
+          type: string
+          example: "Effective Java"
+        author:
+          type: string
+          example: "Joshua Bloch"
+
+    # Library Service Schemas
+    LibraryAvailabilityResponse:
+      type: object
+      properties:
+        libraryId:
+          type: string
+          example: "LIB-001"
+        libraryName:
+          type: string
+          example: "Central Community Library"
+        location:
+          type: string
+          example: "123 Main St"
+        availableCopies:
+          type: integer
+          example: 3
+        totalCopies:
+          type: integer
+          example: 5
+
+    BookAvailabilityResponse:
+      type: object
+      properties:
+        libraryId:
+          type: string
+          example: "LIB-001"
+        isbn:
+          type: string
+          example: "978-0134685991"
+        availableCopies:
+          type: integer
+          example: 3
+        totalCopies:
+          type: integer
+          example: 5
+        isAvailable:
+          type: boolean
+          example: true
+
+    BorrowBookRequest:
+      type: object
+      required:
+        - customerId
+      properties:
+        customerId:
+          type: string
+          example: "CUST-1002"
+
+    ReturnBookRequest:
+      type: object
+      required:
+        - borrowRecordId
+        - customerId
+      properties:
+        borrowRecordId:
+          type: string
+          example: "REC-99482"
+        customerId:
+          type: string
+          example: "CUST-1002"
+
+    BorrowRecordResponse:
+      type: object
+      properties:
+        borrowRecordId:
+          type: string
+          example: "REC-99482"
+        libraryId:
+          type: string
+          example: "LIB-001"
+        isbn:
+          type: string
+          example: "978-0134685991"
+        customerId:
+          type: string
+          example: "CUST-1002"
+        borrowedAt:
+          type: string
+          format: date-time
+          example: "2026-08-09T10:00:00Z"
+        dueDate:
+          type: string
+          format: date-time
+          example: "2026-08-23T10:00:00Z"
+        returnedAt:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2026-08-15T14:30:00Z"
+        status:
+          type: string
+          enum: [BORROWED, RETURNED, OVERDUE]
+          example: "BORROWED"
+
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          example: "NOT_FOUND"
+        message:
+          type: string
+          example: "Book not found in master catalog"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-08-09T19:15:00Z"
+
+  responses:
+    BadRequest:
+      description: Invalid request parameters or body payload
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Requested resource was not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
