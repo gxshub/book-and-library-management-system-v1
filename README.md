@@ -6,8 +6,9 @@ The goal is to show how requirements can move from written specs to an implement
 ## Changes in Iteration 2
 
 - Expanded User Stories in Library Service
-- **CQRS Application Architecture**: Separated Library Service into Command Application Services (state mutation via aggregate roots) and Query Application Services (read-only projections).
-- Implemented **Event Sourcing** for the `InventoryAggregate` in the Library Service.
+- Expanded Domain Models in Library Service
+- **CQRS** Application Architecture for the Library Service
+- Implemented **Event Sourcing** for the Inventory component in the Library Service's domain model.
 
 ## Project Intention
 
