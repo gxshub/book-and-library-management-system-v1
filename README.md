@@ -3,6 +3,18 @@
 <!--This repository is a **teaching project** that demonstrates a simple **AI-driven development workflow**.  
 The goal is to show how requirements can move from written specs to an implemented microservice application, and how that evolution can be taught by comparing branches.
 -->
+## Changes in Iteration 2
+
+- **CQRS Application Architecture**: Separated Library Service into Command Application Services (state mutation via aggregate roots) and Query Application Services (read-only projections).
+- **Event Sourcing for Inventory**: Implemented event sourcing for `InventoryAggregate`, recording immutable state transition events (`InventoryCopyReserved`, `InventoryCopyReleased`, `InventoryAdjusted`, `InventoryTransferredOut`, `InventoryTransferredIn`) and projecting to `inventory_read_model`.
+- **Expanded Circulation & Administrative Workflows (L1–L13)**:
+  - Reservation Hold Queue management (FIFO position allocation & cancellation).
+  - Loan Renewals (max renewal policy enforcement and hold conflict checks).
+  - Customer Active Loans and Library Overdue Loans reporting.
+  - Exception Reporting (lost or damaged book copy reporting).
+  - Stock Management (manual inventory adjustments and inter-branch copy transfers).
+  - Financial Ledger (overdue fine assessment, payments, and librarian waivers).
+
 ## Project Intention
 
 This case study is designed to teach:
