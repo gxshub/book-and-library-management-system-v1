@@ -16,8 +16,6 @@ Each microservice module is structured into four distinct layers:
 Library Service applies CQRS with logical separation inside the same service module:
 1. **Command application service**: handles state-changing use cases, executes aggregate rules, and persists writes.
 2. **Query application service**: handles read-only use cases from read models/projections.
-3. **Projection update flow**: command-side domain events update read-side views used by query handlers.
-4. **Aggregate usage boundary**: only command handlers execute aggregate behavior; query handlers do not load aggregates for business mutation paths.
 
 ## Repository Structure
 The project is structured as a multi-module repository:

@@ -14,7 +14,7 @@ tags:
   - name: Book Service
     description: Master catalog management endpoints
   - name: Library Service
-    description: Inventory, circulation, hold, and fine management endpoints
+    description: Inventory, circulation, and fine management endpoints
 
 paths:
   /books:
@@ -161,7 +161,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BorrowRecordResponse'
+                $ref: '#/components/schemas/LoanResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
@@ -169,7 +169,7 @@ paths:
         '409':
           $ref: '#/components/responses/Conflict'
 
-  /libraries/{libraryId}/books/{isbn}/return:
+  /libraries/{libraryId}/books/{isbn}/loans/{loanId}/return:
     post:
       tags: [Library Service]
       summary: Return a borrowed book (L4)
@@ -177,6 +177,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/LibraryIdPathParam'
         - $ref: '#/components/parameters/IsbnPathParam'
+        - $ref: '#/components/parameters/LoanIdPathParam'
       requestBody:
         required: true
         content:
@@ -189,54 +190,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BorrowRecordResponse'
+                $ref: '#/components/schemas/LoanResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-
-  /libraries/{libraryId}/books/{isbn}/holds:
-    post:
-      tags: [Library Service]
-      summary: Place a hold (L5)
-      operationId: placeHold
-      parameters:
-        - $ref: '#/components/parameters/LibraryIdPathParam'
-        - $ref: '#/components/parameters/IsbnPathParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PlaceHoldRequest'
-      responses:
-        '201':
-          description: Hold placed successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HoldResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-
-  /libraries/{libraryId}/books/{isbn}/holds/{holdId}:
-    delete:
-      tags: [Library Service]
-      summary: Cancel a hold (L6)
-      operationId: cancelHold
-      parameters:
-        - $ref: '#/components/parameters/LibraryIdPathParam'
-        - $ref: '#/components/parameters/IsbnPathParam'
-        - $ref: '#/components/parameters/HoldIdPathParam'
-      responses:
-        '204':
-          description: Hold cancelled successfully
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
@@ -245,7 +201,7 @@ paths:
   /libraries/{libraryId}/books/{isbn}/loans/{loanId}/renew:
     post:
       tags: [Library Service]
-      summary: Renew a loan (L7)
+      summary: Renew a loan (L5)
       operationId: renewLoan
       parameters:
         - $ref: '#/components/parameters/LibraryIdPathParam'
@@ -263,7 +219,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BorrowRecordResponse'
+                $ref: '#/components/schemas/LoanResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
@@ -274,13 +230,14 @@ paths:
   /customers/{customerId}/loans:
     get:
       tags: [Library Service]
-      summary: List active loans for a customer (L8)
+      summary: List active loans for a customer (L6)
       operationId: listActiveLoansForCustomer
       parameters:
         - $ref: '#/components/parameters/CustomerIdPathParam'
         - name: status
           in: query
           required: false
+          description: "Query-level filter. `ACTIVE` returns loans with domain status `BORROWED` or `OVERDUE`."
           schema:
             type: string
             enum: [ACTIVE]
@@ -293,14 +250,14 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/BorrowRecordResponse'
+                  $ref: '#/components/schemas/LoanResponse'
         '404':
           $ref: '#/components/responses/NotFound'
 
   /libraries/{libraryId}/loans/overdue:
     get:
       tags: [Library Service]
-      summary: List overdue loans for a library (L9)
+      summary: List overdue loans for a library (L7)
       operationId: listOverdueLoansByLibrary
       parameters:
         - $ref: '#/components/parameters/LibraryIdPathParam'
@@ -318,14 +275,14 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/BorrowRecordResponse'
+                  $ref: '#/components/schemas/LoanResponse'
         '404':
           $ref: '#/components/responses/NotFound'
 
   /libraries/{libraryId}/books/{isbn}/loans/{loanId}/report-loss-or-damage:
     post:
       tags: [Library Service]
-      summary: Report lost or damaged copy (L10)
+      summary: Report lost or damaged copy (L8)
       operationId: reportLossOrDamage
       parameters:
         - $ref: '#/components/parameters/LibraryIdPathParam'
@@ -343,7 +300,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BorrowRecordResponse'
+                $ref: '#/components/schemas/LoanResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
@@ -354,7 +311,7 @@ paths:
   /libraries/{libraryId}/books/{isbn}/inventory/adjust:
     post:
       tags: [Library Service]
-      summary: Adjust inventory stock (L11)
+      summary: Adjust inventory stock (L9)
       operationId: adjustInventoryStock
       parameters:
         - $ref: '#/components/parameters/LibraryIdPathParam'
@@ -382,7 +339,7 @@ paths:
   /inventory/transfers:
     post:
       tags: [Library Service]
-      summary: Transfer copies between libraries (L12)
+      summary: Transfer copies between libraries (L10)
       operationId: transferInventory
       requestBody:
         required: true
@@ -407,7 +364,7 @@ paths:
   /fines/{fineId}/payments:
     post:
       tags: [Library Service]
-      summary: Pay overdue fine (L13)
+      summary: Pay overdue fine (L11)
       operationId: payFine
       parameters:
         - $ref: '#/components/parameters/FineIdPathParam'
@@ -420,33 +377,6 @@ paths:
       responses:
         '200':
           description: Fine payment recorded
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FineResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-
-  /fines/{fineId}/waivers:
-    post:
-      tags: [Library Service]
-      summary: Waive overdue fine (L13)
-      operationId: waiveFine
-      parameters:
-        - $ref: '#/components/parameters/FineIdPathParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/FineWaiverRequest'
-      responses:
-        '200':
-          description: Fine waiver recorded
           content:
             application/json:
               schema:
@@ -488,13 +418,6 @@ components:
       schema:
         type: string
       description: Loan record ID
-    HoldIdPathParam:
-      name: holdId
-      in: path
-      required: true
-      schema:
-        type: string
-      description: Hold request ID
     FineIdPathParam:
       name: fineId
       in: path
@@ -589,17 +512,6 @@ components:
           example: "CUST-1002"
 
     ReturnBookRequest:
-      type: object
-      required: [borrowRecordId, customerId]
-      properties:
-        borrowRecordId:
-          type: string
-          example: "REC-99482"
-        customerId:
-          type: string
-          example: "CUST-1002"
-
-    PlaceHoldRequest:
       type: object
       required: [customerId]
       properties:
@@ -699,37 +611,10 @@ components:
           enum: [ACCEPTED, COMPLETED]
           example: "ACCEPTED"
 
-    HoldResponse:
+    LoanResponse:
       type: object
       properties:
-        holdId:
-          type: string
-          example: "HOLD-00045"
-        libraryId:
-          type: string
-          example: "LIB-001"
-        isbn:
-          type: string
-          example: "978-0134685991"
-        customerId:
-          type: string
-          example: "CUST-1002"
-        status:
-          type: string
-          enum: [ACTIVE, CANCELLED, FULFILLED, EXPIRED]
-          example: "ACTIVE"
-        position:
-          type: integer
-          example: 2
-        placedAt:
-          type: string
-          format: date-time
-          example: "2026-08-29T01:10:00Z"
-
-    BorrowRecordResponse:
-      type: object
-      properties:
-        borrowRecordId:
+        loanId:
           type: string
           example: "REC-99482"
         libraryId:
@@ -772,19 +657,6 @@ components:
           type: string
           example: "CUST-1002"
 
-    FineWaiverRequest:
-      type: object
-      required: [amount, waivedBy, reason]
-      properties:
-        amount:
-          $ref: '#/components/schemas/Money'
-        waivedBy:
-          type: string
-          example: "LIBRARIAN-9001"
-        reason:
-          type: string
-          example: "Approved hardship waiver"
-
     FineResponse:
       type: object
       properties:
@@ -801,13 +673,11 @@ components:
           $ref: '#/components/schemas/Money'
         paid:
           $ref: '#/components/schemas/Money'
-        waived:
-          $ref: '#/components/schemas/Money'
         balance:
           $ref: '#/components/schemas/Money'
         status:
           type: string
-          enum: [OPEN, SETTLED, WAIVED]
+          enum: [OPEN, SETTLED]
           example: "OPEN"
 
     Money:

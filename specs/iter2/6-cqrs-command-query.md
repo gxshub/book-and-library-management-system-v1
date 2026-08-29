@@ -4,7 +4,7 @@
 This document defines how Library Service applies CQRS, including:
 1. Separation between command and query application services.
 2. Write/read model responsibilities.
-3. User story mapping (`L1` to `L13`) to command or query.
+3. User story mapping (`L1` to `L11`) to command or query.
 4. Command and query catalogs.
 5. Handler wiring and read model update flow.
 6. Consistency model and error model.
@@ -43,31 +43,29 @@ This document defines how Library Service applies CQRS, including:
 
 ### 4.1 Write Model (Aggregates)
 - Event-sourced aggregate: `InventoryAggregate`.
-- CRUD aggregates: `LoanAggregate`, `HoldQueueAggregate`, `FineAggregate`.
+- CRUD aggregates: `LoanAggregate`, `FineAggregate`.
 
 ### 4.2 Read Model (Projections)
 - `inventory_read_model`: driven by `InventoryAggregate` events. Used by L1, L2 queries.
-- Loan/hold/fine reporting queries read directly from CRUD entity stores.
+- Loan/fine reporting queries read directly from CRUD entity stores.
 
 ---
 
-## 5. User Story Classification (L1-L13)
+## 5. User Story Classification (L1-L11)
 
 | User Story ID | User Story | CQRS Type | Through Aggregate |
-| :--- | :--- | :--- | :--- |
-| L1 | Find libraries by book ISBN | Query | No |
-| L2 | Check book availability | Query | No |
-| L3 | Borrow a book | Command | Yes |
-| L4 | Return a book | Command | Yes |
-| L5 | Place a hold | Command | Yes |
-| L6 | Cancel a hold | Command | Yes |
-| L7 | Renew a loan | Command | Yes |
-| L8 | List active loans for a customer | Query | No |
-| L9 | List overdue loans for a library | Query | No |
-| L10 | Report lost or damaged copy | Command | Yes |
-| L11 | Adjust inventory stock | Command | Yes |
-| L12 | Transfer copies between libraries | Command | Yes |
-| L13 | Pay or waive overdue fine | Command | Yes |
+|:--------------| :--- | :--- | :--- |
+| L1            | Find libraries by book ISBN | Query | No |
+| L2            | Check book availability | Query | No |
+| L3            | Borrow a book | Command | Yes |
+| L4            | Return a book | Command | Yes |
+| L5            | Renew a loan | Command | Yes |
+| L6            | List active loans for a customer | Query | No |
+| L7            | List overdue loans for a library | Query | No |
+| L8            | Report lost or damaged copy | Command | Yes |
+| L9            | Adjust inventory stock | Command | Yes |
+| L10           | Transfer copies between libraries | Command | Yes |
+| L11           | Pay overdue fine | Command | Yes |
 
 ---
 
@@ -77,14 +75,11 @@ This document defines how Library Service applies CQRS, including:
 | :--- | :--- | :--- | :--- | :--- |
 | `BorrowBookCommand` | `LoanAggregate` + `InventoryAggregate` | L3 | `BookBorrowed`, `InventoryCopyReserved` | CRUD + Event store |
 | `ReturnBookCommand` | `LoanAggregate` + `InventoryAggregate` | L4 | `BookReturned`, `InventoryCopyReleased` | CRUD + Event store |
-| `PlaceHoldCommand` | `HoldQueueAggregate` | L5 | `HoldPlaced` | CRUD |
-| `CancelHoldCommand` | `HoldQueueAggregate` | L6 | `HoldCancelled` | CRUD |
-| `RenewLoanCommand` | `LoanAggregate` | L7 | `LoanRenewed` | CRUD |
-| `ReportLossOrDamageCommand` | `LoanAggregate` + `InventoryAggregate` | L10 | `CopyReportedLost` or `CopyReportedDamaged` | CRUD + Event store |
-| `AdjustInventoryCommand` | `InventoryAggregate` | L11 | `InventoryAdjusted` | Event store |
-| `TransferInventoryCommand` | `InventoryAggregate` (source + target) | L12 | `InventoryTransferredOut`, `InventoryTransferredIn` | Event store |
-| `PayFineCommand` | `FineAggregate` | L13 | `FinePaid` | CRUD |
-| `WaiveFineCommand` | `FineAggregate` | L13 | `FineWaived` | CRUD |
+| `RenewLoanCommand` | `LoanAggregate` | L5 | `LoanRenewed` | CRUD |
+| `ReportLossOrDamageCommand` | `LoanAggregate` + `InventoryAggregate` | L8 | `CopyReportedLost` or `CopyReportedDamaged` | CRUD + Event store |
+| `AdjustInventoryCommand` | `InventoryAggregate` | L9 | `InventoryInitialized` (first call) + `InventoryAdjusted` | Event store |
+| `TransferInventoryCommand` | `InventoryAggregate` (source + target) | L10 | `InventoryTransferredOut`, `InventoryTransferredIn` | Event store |
+| `PayFineCommand` | `FineAggregate` | L11 | `FinePaid` | CRUD |
 
 Command responses return outcome metadata (success/failure, IDs, version). They do not return read model projections.
 
@@ -92,9 +87,9 @@ Command responses return outcome metadata (success/failure, IDs, version). They 
 
 ## 7. Query Catalog
 
-| Query | Story | Read Source | Consistency |
-| :--- | :--- | :--- | :--- |
-| `FindLibrariesByIsbnQuery(isbn)` | L1 | `inventory_read_model` | Eventual (bounded) |
-| `CheckBookAvailabilityQuery(libraryId, isbn)` | L2 | `inventory_read_model` | Eventual (bounded) |
-| `ListActiveLoansByCustomerQuery(customerId)` | L8 | Loan CRUD store | Strong (local DB) |
-| `ListOverdueLoansByLibraryQuery(libraryId)` | L9 | Loan CRUD store | Strong (local DB) |
+| Query | Story | Read Source | Consistency | Notes |
+| :--- | :--- | :--- | :--- | :--- |
+| `FindLibrariesByIsbnQuery(isbn)` | L1 | `inventory_read_model` | Eventual (bounded) | |
+| `CheckBookAvailabilityQuery(libraryId, isbn)` | L2 | `inventory_read_model` | Eventual (bounded) | |
+| `ListActiveLoansByCustomerQuery(customerId)` | L6 | Loan CRUD store | Strong (local DB) | Returns loans with status `BORROWED` or `OVERDUE` (API filter `status=ACTIVE`) |
+| `ListOverdueLoansByLibraryQuery(libraryId)` | L7 | Loan CRUD store | Strong (local DB) | |

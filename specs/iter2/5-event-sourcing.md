@@ -2,7 +2,7 @@
 
 ## 1. Scope
 - This specification defines event sourcing for **Library Service**, where only `InventoryAggregate` is event-sourced.
-- Other aggregates (`LoanAggregate`, `HoldQueueAggregate`, `FineAggregate`) remain CRUD-based.
+- Other aggregates (`LoanAggregate`, `FineAggregate`) remain CRUD-based.
 
 ---
 
@@ -38,8 +38,8 @@
 | `InventoryCopyReserved` | `reserveCopyForLoan()` | `libraryId`, `isbn`, `loanId` |
 | `InventoryCopyReleased` | `releaseCopyFromReturn()` | `libraryId`, `isbn`, `loanId` |
 | `InventoryAdjusted` | `adjustStock(reason, delta)` | `libraryId`, `isbn`, `delta`, `reasonCode`, `operatorId` |
-| `InventoryTransferredOut` | `transferOut(quantity, transferId)` | `libraryId`, `isbn`, `quantity`, `transferId` |
-| `InventoryTransferredIn` | `transferIn(quantity, transferId)` | `libraryId`, `isbn`, `quantity`, `transferId` |
+| `InventoryTransferredOut` | `transferOut(quantity, transferId)` | `sourceLibraryId`, `targetLibraryId`, `isbn`, `quantity`, `transferId` |
+| `InventoryTransferredIn`  | `transferIn(quantity, transferId)`  | `sourceLibraryId`, `targetLibraryId`, `isbn`, `quantity`, `transferId` |
 
 ---
 

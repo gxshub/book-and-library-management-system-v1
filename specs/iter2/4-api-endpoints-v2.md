@@ -1,4 +1,4 @@
-# API Endpoints Summary (v2)
+# API Endpoints Summary 
 
 ## 1. Book Service (`http://localhost:8081/api/v1`)
 
@@ -20,24 +20,21 @@ Book Service APIs remain unchanged from v1.
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **L1** | Query | `GET` | `/libraries/by-isbn/{isbn}` | *None* | `200 OK` (`Array<LibraryAvailabilityResponse>`) | None |
 | **L2** | Query | `GET` | `/libraries/{libraryId}/books/{isbn}/availability` | *None* | `200 OK` (`BookAvailabilityResponse`) | None |
-| **L3** | Command | `POST` | `/libraries/{libraryId}/books/{isbn}/borrow` | `BorrowBookRequest` | `201 Created` (`BorrowRecordResponse`) | **Book Service**: `GET /books/{isbn}` |
-| **L4** | Command | `POST` | `/libraries/{libraryId}/books/{isbn}/return` | `ReturnBookRequest` | `200 OK` (`BorrowRecordResponse`) | None |
-| **L5** | Command | `POST` | `/libraries/{libraryId}/books/{isbn}/holds` | `PlaceHoldRequest` | `201 Created` (`HoldResponse`) | **Book Service**: `GET /books/{isbn}` |
-| **L6** | Command | `DELETE` | `/libraries/{libraryId}/books/{isbn}/holds/{holdId}` | *None* | `204 No Content` | None |
-| **L7** | Command | `POST` | `/libraries/{libraryId}/books/{isbn}/loans/{loanId}/renew` | `RenewLoanRequest` | `200 OK` (`BorrowRecordResponse`) | None |
-| **L8** | Query | `GET` | `/customers/{customerId}/loans?status=ACTIVE` | *None* | `200 OK` (`Array<BorrowRecordResponse>`) | None |
-| **L9** | Query | `GET` | `/libraries/{libraryId}/loans/overdue` | *None* | `200 OK` (`Array<BorrowRecordResponse>`) | None |
-| **L10** | Command | `POST` | `/libraries/{libraryId}/books/{isbn}/loans/{loanId}/report-loss-or-damage` | `LossDamageReportRequest` | `200 OK` (`BorrowRecordResponse`) | None |
-| **L11** | Command | `POST` | `/libraries/{libraryId}/books/{isbn}/inventory/adjust` | `InventoryAdjustmentRequest` | `200 OK` (`InventoryAdjustmentResponse`) | None |
-| **L12** | Command | `POST` | `/inventory/transfers` | `InventoryTransferRequest` | `202 Accepted` (`InventoryTransferResponse`) | None |
-| **L13** | Command | `POST` | `/fines/{fineId}/payments` | `FinePaymentRequest` | `200 OK` (`FineResponse`) | None |
-| **L13** | Command | `POST` | `/fines/{fineId}/waivers` | `FineWaiverRequest` | `200 OK` (`FineResponse`) | None |
-## 3. Endpoint Naming and Contract Rules (v2)
+| **L3** | Command | `POST` | `/libraries/{libraryId}/books/{isbn}/borrow` | `BorrowBookRequest` | `201 Created` (`LoanResponse`) | **Book Service**: `GET /books/{isbn}` |
+| **L4** | Command | `POST` | `/libraries/{libraryId}/books/{isbn}/loans/{loanId}/return` | `ReturnBookRequest` | `200 OK` (`LoanResponse`) | None |
+| **L5** | Command | `POST` | `/libraries/{libraryId}/books/{isbn}/loans/{loanId}/renew` | `RenewLoanRequest` | `200 OK` (`LoanResponse`) | None |
+| **L6** | Query | `GET` | `/customers/{customerId}/loans?status=ACTIVE` | *None* | `200 OK` (`Array<LoanResponse>`) | None |
+| **L7** | Query | `GET` | `/libraries/{libraryId}/loans/overdue` | *None* | `200 OK` (`Array<LoanResponse>`) | None |
+| **L8** | Command | `POST` | `/libraries/{libraryId}/books/{isbn}/loans/{loanId}/report-loss-or-damage` | `LossDamageReportRequest` | `200 OK` (`LoanResponse`) | None |
+| **L9** | Command | `POST` | `/libraries/{libraryId}/books/{isbn}/inventory/adjust` | `InventoryAdjustmentRequest` | `200 OK` (`InventoryAdjustmentResponse`) | None |
+| **L10** | Command | `POST` | `/inventory/transfers` | `InventoryTransferRequest` | `202 Accepted` (`InventoryTransferResponse`) | None |
+| **L11** | Command | `POST` | `/fines/{fineId}/payments` | `FinePaymentRequest` | `200 OK` (`FineResponse`) | None |
+## 3. Endpoint Naming and Contract Rules
 
 1. Command endpoints use verbs as trailing actions only when state transition intent is explicit (e.g., `/renew`, `/adjust`).
 2. Query endpoints stay resource-oriented and side-effect free.
 3. Command responses return mutation outcome objects; query responses return read-model DTOs.
-4. For InventoryAggregate commands (L11, L12, and borrow/return inventory mutations), persistence follows event sourcing phase-1 design in `specs/iter2/5-event-sourcing.md`.
+4. For InventoryAggregate commands (L9, L10, and borrow/return inventory mutations), persistence follows event sourcing phase-1 design in `specs/iter2/5-event-sourcing.md`.
 
 ---
 
@@ -45,10 +42,9 @@ Book Service APIs remain unchanged from v1.
 
 | Error Code | HTTP Status | Applies To | Meaning |
 | :--- | :--- | :--- | :--- |
-| `ResourceNotFound` | `404` | Commands + Queries | Requested book/library/loan/hold/fine not found |
+| `ResourceNotFound` | `404` | Commands + Queries | Requested book/library/loan/fine not found |
 | `ValidationFailed` | `400` | Commands + Queries | Invalid request shape or parameters |
-| `InventoryInvariantViolation` | `409` | L3, L4, L10, L11, L12 | Inventory rule violation (e.g., availability below zero) |
-| `InventoryConflict` | `409` | L11, L12 (+ inventory mutations in L3/L4) | Concurrent update/version conflict |
-| `LoanPolicyViolation` | `409` | L3, L7, L10 | Borrow/renew/loss-damage transition denied by policy |
-| `HoldStateViolation` | `409` | L5, L6 | Duplicate hold or invalid hold lifecycle transition |
-| `FineStateViolation` | `409` | L13 | Payment/waiver exceeds outstanding balance or violates role/policy |
+| `InventoryInvariantViolation` | `409` | L3, L4, L8, L9, L10 | Inventory rule violation (e.g., availability below zero) |
+| `InventoryConflict` | `409` | L9, L10 (+ inventory mutations in L3/L4) | Concurrent update/version conflict |
+| `LoanPolicyViolation` | `409` | L3, L5, L8 | Borrow/renew/loss-damage transition denied by policy |
+| `FineStateViolation` | `409` | L11 | Payment exceeds outstanding balance |
