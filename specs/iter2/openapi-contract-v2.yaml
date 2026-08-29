@@ -1,0 +1,861 @@
+openapi: 3.0.3
+info:
+  title: Microservice Library Application API Specification (Iteration 2)
+  description: OpenAPI 3.0 specification for Book Service and Library Service based on specs-iter2.
+  version: 2.0.0
+
+servers:
+  - url: http://localhost:8081/api/v1
+    description: Book Service Local Development Server
+  - url: http://localhost:8082/api/v1
+    description: Library Service Local Development Server
+
+tags:
+  - name: Book Service
+    description: Master catalog management endpoints
+  - name: Library Service
+    description: Inventory, circulation, hold, and fine management endpoints
+
+paths:
+  /books:
+    post:
+      tags: [Book Service]
+      summary: Create a new book (B1)
+      operationId: createBook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookCreateRequest'
+      responses:
+        '201':
+          description: Book created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    get:
+      tags: [Book Service]
+      summary: List all books (B2)
+      operationId: listAllBooks
+      responses:
+        '200':
+          description: A list of all books in the catalog
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BookResponse'
+
+  /books/{isbn}:
+    get:
+      tags: [Book Service]
+      summary: Get book by ISBN (B1)
+      operationId: getBookByIsbn
+      parameters:
+        - $ref: '#/components/parameters/IsbnPathParam'
+      responses:
+        '200':
+          description: Book details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Book Service]
+      summary: Update book by ISBN (B1)
+      operationId: updateBook
+      parameters:
+        - $ref: '#/components/parameters/IsbnPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookUpdateRequest'
+      responses:
+        '200':
+          description: Book updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Book Service]
+      summary: Delete book by ISBN (B1)
+      operationId: deleteBook
+      parameters:
+        - $ref: '#/components/parameters/IsbnPathParam'
+      responses:
+        '204':
+          description: Book deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /libraries/by-isbn/{isbn}:
+    get:
+      tags: [Library Service]
+      summary: Find libraries by book ISBN (L1)
+      operationId: findLibrariesByIsbn
+      parameters:
+        - $ref: '#/components/parameters/IsbnPathParam'
+      responses:
+        '200':
+          description: Libraries where the book is available
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LibraryAvailabilityResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /libraries/{libraryId}/books/{isbn}/availability:
+    get:
+      tags: [Library Service]
+      summary: Check book availability in a library (L2)
+      operationId: checkBookAvailability
+      parameters:
+        - $ref: '#/components/parameters/LibraryIdPathParam'
+        - $ref: '#/components/parameters/IsbnPathParam'
+      responses:
+        '200':
+          description: Availability retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookAvailabilityResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /libraries/{libraryId}/books/{isbn}/borrow:
+    post:
+      tags: [Library Service]
+      summary: Borrow a book (L3)
+      operationId: borrowBook
+      parameters:
+        - $ref: '#/components/parameters/LibraryIdPathParam'
+        - $ref: '#/components/parameters/IsbnPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BorrowBookRequest'
+      responses:
+        '201':
+          description: Book borrowed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BorrowRecordResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /libraries/{libraryId}/books/{isbn}/return:
+    post:
+      tags: [Library Service]
+      summary: Return a borrowed book (L4)
+      operationId: returnBook
+      parameters:
+        - $ref: '#/components/parameters/LibraryIdPathParam'
+        - $ref: '#/components/parameters/IsbnPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReturnBookRequest'
+      responses:
+        '200':
+          description: Book returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BorrowRecordResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /libraries/{libraryId}/books/{isbn}/holds:
+    post:
+      tags: [Library Service]
+      summary: Place a hold (L5)
+      operationId: placeHold
+      parameters:
+        - $ref: '#/components/parameters/LibraryIdPathParam'
+        - $ref: '#/components/parameters/IsbnPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlaceHoldRequest'
+      responses:
+        '201':
+          description: Hold placed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HoldResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /libraries/{libraryId}/books/{isbn}/holds/{holdId}:
+    delete:
+      tags: [Library Service]
+      summary: Cancel a hold (L6)
+      operationId: cancelHold
+      parameters:
+        - $ref: '#/components/parameters/LibraryIdPathParam'
+        - $ref: '#/components/parameters/IsbnPathParam'
+        - $ref: '#/components/parameters/HoldIdPathParam'
+      responses:
+        '204':
+          description: Hold cancelled successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /libraries/{libraryId}/books/{isbn}/loans/{loanId}/renew:
+    post:
+      tags: [Library Service]
+      summary: Renew a loan (L7)
+      operationId: renewLoan
+      parameters:
+        - $ref: '#/components/parameters/LibraryIdPathParam'
+        - $ref: '#/components/parameters/IsbnPathParam'
+        - $ref: '#/components/parameters/LoanIdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RenewLoanRequest'
+      responses:
+        '200':
+          description: Loan renewed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BorrowRecordResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /customers/{customerId}/loans:
+    get:
+      tags: [Library Service]
+      summary: List active loans for a customer (L8)
+      operationId: listActiveLoansForCustomer
+      parameters:
+        - $ref: '#/components/parameters/CustomerIdPathParam'
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [ACTIVE]
+            default: ACTIVE
+      responses:
+        '200':
+          description: Active loans retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BorrowRecordResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /libraries/{libraryId}/loans/overdue:
+    get:
+      tags: [Library Service]
+      summary: List overdue loans for a library (L9)
+      operationId: listOverdueLoansByLibrary
+      parameters:
+        - $ref: '#/components/parameters/LibraryIdPathParam'
+        - name: overdueBucket
+          in: query
+          required: false
+          description: Optional overdue duration bucket (for example gt7d)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Overdue loans retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BorrowRecordResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /libraries/{libraryId}/books/{isbn}/loans/{loanId}/report-loss-or-damage:
+    post:
+      tags: [Library Service]
+      summary: Report lost or damaged copy (L10)
+      operationId: reportLossOrDamage
+      parameters:
+        - $ref: '#/components/parameters/LibraryIdPathParam'
+        - $ref: '#/components/parameters/IsbnPathParam'
+        - $ref: '#/components/parameters/LoanIdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LossDamageReportRequest'
+      responses:
+        '200':
+          description: Loan updated with loss/damage status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BorrowRecordResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /libraries/{libraryId}/books/{isbn}/inventory/adjust:
+    post:
+      tags: [Library Service]
+      summary: Adjust inventory stock (L11)
+      operationId: adjustInventoryStock
+      parameters:
+        - $ref: '#/components/parameters/LibraryIdPathParam'
+        - $ref: '#/components/parameters/IsbnPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventoryAdjustmentRequest'
+      responses:
+        '200':
+          description: Inventory adjusted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryAdjustmentResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /inventory/transfers:
+    post:
+      tags: [Library Service]
+      summary: Transfer copies between libraries (L12)
+      operationId: transferInventory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventoryTransferRequest'
+      responses:
+        '202':
+          description: Transfer accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryTransferResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /fines/{fineId}/payments:
+    post:
+      tags: [Library Service]
+      summary: Pay overdue fine (L13)
+      operationId: payFine
+      parameters:
+        - $ref: '#/components/parameters/FineIdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FinePaymentRequest'
+      responses:
+        '200':
+          description: Fine payment recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FineResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /fines/{fineId}/waivers:
+    post:
+      tags: [Library Service]
+      summary: Waive overdue fine (L13)
+      operationId: waiveFine
+      parameters:
+        - $ref: '#/components/parameters/FineIdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FineWaiverRequest'
+      responses:
+        '200':
+          description: Fine waiver recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FineResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+components:
+  parameters:
+    IsbnPathParam:
+      name: isbn
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Book ISBN
+    LibraryIdPathParam:
+      name: libraryId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Library branch ID
+    CustomerIdPathParam:
+      name: customerId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Customer ID
+    LoanIdPathParam:
+      name: loanId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Loan record ID
+    HoldIdPathParam:
+      name: holdId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Hold request ID
+    FineIdPathParam:
+      name: fineId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Fine ledger ID
+
+  schemas:
+    BookCreateRequest:
+      type: object
+      required: [isbn, title, author]
+      properties:
+        isbn:
+          type: string
+          example: "978-0134685991"
+        title:
+          type: string
+          example: "Effective Java"
+        author:
+          type: string
+          example: "Joshua Bloch"
+
+    BookUpdateRequest:
+      type: object
+      required: [title, author]
+      properties:
+        title:
+          type: string
+          example: "Effective Java (3rd Edition)"
+        author:
+          type: string
+          example: "Joshua Bloch"
+
+    BookResponse:
+      type: object
+      properties:
+        isbn:
+          type: string
+          example: "978-0134685991"
+        title:
+          type: string
+          example: "Effective Java"
+        author:
+          type: string
+          example: "Joshua Bloch"
+
+    LibraryAvailabilityResponse:
+      type: object
+      properties:
+        libraryId:
+          type: string
+          example: "LIB-001"
+        libraryName:
+          type: string
+          example: "Central Community Library"
+        location:
+          type: string
+          example: "123 Main St"
+        availableCopies:
+          type: integer
+          example: 3
+        totalCopies:
+          type: integer
+          example: 5
+
+    BookAvailabilityResponse:
+      type: object
+      properties:
+        libraryId:
+          type: string
+          example: "LIB-001"
+        isbn:
+          type: string
+          example: "978-0134685991"
+        availableCopies:
+          type: integer
+          example: 3
+        totalCopies:
+          type: integer
+          example: 5
+        isAvailable:
+          type: boolean
+          example: true
+
+    BorrowBookRequest:
+      type: object
+      required: [customerId]
+      properties:
+        customerId:
+          type: string
+          example: "CUST-1002"
+
+    ReturnBookRequest:
+      type: object
+      required: [borrowRecordId, customerId]
+      properties:
+        borrowRecordId:
+          type: string
+          example: "REC-99482"
+        customerId:
+          type: string
+          example: "CUST-1002"
+
+    PlaceHoldRequest:
+      type: object
+      required: [customerId]
+      properties:
+        customerId:
+          type: string
+          example: "CUST-1002"
+
+    RenewLoanRequest:
+      type: object
+      properties:
+        requestedBy:
+          type: string
+          enum: [CUSTOMER, LIBRARIAN]
+          example: "CUSTOMER"
+
+    LossDamageReportRequest:
+      type: object
+      required: [reportType, customerId]
+      properties:
+        reportType:
+          type: string
+          enum: [LOST, DAMAGED]
+          example: "DAMAGED"
+        customerId:
+          type: string
+          example: "CUST-1002"
+        notes:
+          type: string
+          example: "Pages missing and water damage."
+
+    InventoryAdjustmentRequest:
+      type: object
+      required: [delta, reasonCode, operatorId]
+      properties:
+        delta:
+          type: integer
+          example: -1
+          description: Positive to add copies, negative to remove copies
+        reasonCode:
+          type: string
+          example: "AUDIT_CORRECTION"
+        operatorId:
+          type: string
+          example: "LIBRARIAN-9001"
+
+    InventoryAdjustmentResponse:
+      type: object
+      properties:
+        inventoryId:
+          type: string
+          example: "LIB-001:978-0134685991"
+        libraryId:
+          type: string
+          example: "LIB-001"
+        isbn:
+          type: string
+          example: "978-0134685991"
+        totalCopies:
+          type: integer
+          example: 4
+        availableCopies:
+          type: integer
+          example: 2
+        version:
+          type: integer
+          example: 8
+
+    InventoryTransferRequest:
+      type: object
+      required: [isbn, sourceLibraryId, targetLibraryId, quantity, requestedBy]
+      properties:
+        isbn:
+          type: string
+          example: "978-0134685991"
+        sourceLibraryId:
+          type: string
+          example: "LIB-001"
+        targetLibraryId:
+          type: string
+          example: "LIB-002"
+        quantity:
+          type: integer
+          minimum: 1
+          example: 2
+        requestedBy:
+          type: string
+          example: "LIBRARIAN-9001"
+
+    InventoryTransferResponse:
+      type: object
+      properties:
+        transferId:
+          type: string
+          example: "TRF-20260829-0001"
+        status:
+          type: string
+          enum: [ACCEPTED, COMPLETED]
+          example: "ACCEPTED"
+
+    HoldResponse:
+      type: object
+      properties:
+        holdId:
+          type: string
+          example: "HOLD-00045"
+        libraryId:
+          type: string
+          example: "LIB-001"
+        isbn:
+          type: string
+          example: "978-0134685991"
+        customerId:
+          type: string
+          example: "CUST-1002"
+        status:
+          type: string
+          enum: [ACTIVE, CANCELLED, FULFILLED, EXPIRED]
+          example: "ACTIVE"
+        position:
+          type: integer
+          example: 2
+        placedAt:
+          type: string
+          format: date-time
+          example: "2026-08-29T01:10:00Z"
+
+    BorrowRecordResponse:
+      type: object
+      properties:
+        borrowRecordId:
+          type: string
+          example: "REC-99482"
+        libraryId:
+          type: string
+          example: "LIB-001"
+        isbn:
+          type: string
+          example: "978-0134685991"
+        customerId:
+          type: string
+          example: "CUST-1002"
+        borrowedAt:
+          type: string
+          format: date-time
+          example: "2026-08-29T01:00:00Z"
+        dueDate:
+          type: string
+          format: date-time
+          example: "2026-09-12T01:00:00Z"
+        returnedAt:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
+        renewalCount:
+          type: integer
+          example: 1
+        status:
+          type: string
+          enum: [BORROWED, RETURNED, OVERDUE, LOST, DAMAGED]
+          example: "BORROWED"
+
+    FinePaymentRequest:
+      type: object
+      required: [amount, paidBy]
+      properties:
+        amount:
+          $ref: '#/components/schemas/Money'
+        paidBy:
+          type: string
+          example: "CUST-1002"
+
+    FineWaiverRequest:
+      type: object
+      required: [amount, waivedBy, reason]
+      properties:
+        amount:
+          $ref: '#/components/schemas/Money'
+        waivedBy:
+          type: string
+          example: "LIBRARIAN-9001"
+        reason:
+          type: string
+          example: "Approved hardship waiver"
+
+    FineResponse:
+      type: object
+      properties:
+        fineId:
+          type: string
+          example: "FINE-8801"
+        loanId:
+          type: string
+          example: "REC-99482"
+        customerId:
+          type: string
+          example: "CUST-1002"
+        assessed:
+          $ref: '#/components/schemas/Money'
+        paid:
+          $ref: '#/components/schemas/Money'
+        waived:
+          $ref: '#/components/schemas/Money'
+        balance:
+          $ref: '#/components/schemas/Money'
+        status:
+          type: string
+          enum: [OPEN, SETTLED, WAIVED]
+          example: "OPEN"
+
+    Money:
+      type: object
+      required: [amount, currency]
+      properties:
+        amount:
+          type: number
+          format: double
+          example: 10.5
+        currency:
+          type: string
+          example: "AUD"
+
+    ErrorResponse:
+      type: object
+      required: [code, message, timestamp]
+      properties:
+        code:
+          type: string
+          example: "InventoryConflict"
+        message:
+          type: string
+          example: "Concurrent update/version conflict"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-08-29T02:00:00Z"
+        details:
+          type: object
+          additionalProperties: true
+
+  responses:
+    BadRequest:
+      description: Invalid request parameters or payload
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Requested resource was not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: Domain invariant or concurrency conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
