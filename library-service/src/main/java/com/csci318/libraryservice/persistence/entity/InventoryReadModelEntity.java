@@ -1,52 +1,43 @@
-package com.csci318.libraryservice.domain;
+package com.csci318.libraryservice.persistence.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "book_inventories")
-public class BookInventory {
+@Table(name = "inventory_read_model")
+public class InventoryReadModelEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
+    private String inventoryId;
     private String libraryId;
     private String isbn;
     private int totalCopies;
     private int availableCopies;
+    private long version;
 
-    public BookInventory() {
+    protected InventoryReadModelEntity() {
     }
 
-    public BookInventory(String libraryId, String isbn, int totalCopies, int availableCopies) {
+    public InventoryReadModelEntity(String inventoryId, String libraryId, String isbn, int totalCopies, int availableCopies, long version) {
+        this.inventoryId = inventoryId;
         this.libraryId = libraryId;
         this.isbn = isbn;
         this.totalCopies = totalCopies;
         this.availableCopies = availableCopies;
+        this.version = version;
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
+    public String getInventoryId() {
+        return inventoryId;
     }
 
     public String getLibraryId() {
         return libraryId;
     }
 
-    public void setLibraryId(String libraryId) {
-        this.libraryId = libraryId;
-    }
-
     public String getIsbn() {
         return isbn;
-    }
-
-    public void setIsbn(String isbn) {
-        this.isbn = isbn;
     }
 
     public int getTotalCopies() {
@@ -63,5 +54,13 @@ public class BookInventory {
 
     public void setAvailableCopies(int availableCopies) {
         this.availableCopies = availableCopies;
+    }
+
+    public long getVersion() {
+        return version;
+    }
+
+    public void setVersion(long version) {
+        this.version = version;
     }
 }

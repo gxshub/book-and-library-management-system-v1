@@ -1,51 +1,52 @@
 package com.csci318.bookservice.exception;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.time.LocalDateTime;
-import java.util.HashMap;
+import java.time.OffsetDateTime;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(BookNotFoundException.class)
-    public ResponseEntity<Map<String, Object>> handleBookNotFound(BookNotFoundException ex) {
-        Map<String, Object> body = new HashMap<>();
-        body.put("code", "NOT_FOUND");
-        body.put("message", ex.getMessage());
-        body.put("timestamp", LocalDateTime.now().toString());
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+    public ResponseEntity<ErrorResponse> handleBookNotFound(BookNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse("ResourceNotFound", ex.getMessage(), OffsetDateTime.now(), Map.of()));
     }
 
     @ExceptionHandler(BookAlreadyExistsException.class)
-    public ResponseEntity<Map<String, Object>> handleBookAlreadyExists(BookAlreadyExistsException ex) {
-        Map<String, Object> body = new HashMap<>();
-        body.put("code", "CONFLICT");
-        body.put("message", ex.getMessage());
-        body.put("timestamp", LocalDateTime.now().toString());
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+    public ResponseEntity<ErrorResponse> handleBookAlreadyExists(BookAlreadyExistsException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse("Conflict", ex.getMessage(), OffsetDateTime.now(), Map.of()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, Object>> handleValidationExceptions(MethodArgumentNotValidException ex) {
-        Map<String, Object> body = new HashMap<>();
-        body.put("code", "BAD_REQUEST");
-        body.put("message", "Validation failed for request");
-        body.put("timestamp", LocalDateTime.now().toString());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    public ResponseEntity<ErrorResponse> handleValidationExceptions(MethodArgumentNotValidException ex) {
+        Map<String, Object> details = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .collect(Collectors.toMap(
+                        fieldError -> fieldError.getField(),
+                        fieldError -> fieldError.getDefaultMessage() == null ? "Invalid value" : fieldError.getDefaultMessage(),
+                        (left, right) -> right));
+        return ResponseEntity.badRequest()
+                .body(new ErrorResponse("ValidationFailed", "Validation failed for request", OffsetDateTime.now(), details));
     }
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, Object>> handleGenericException(Exception ex) {
-        Map<String, Object> body = new HashMap<>();
-        body.put("code", "INTERNAL_SERVER_ERROR");
-        body.put("message", ex.getMessage());
-        body.put("timestamp", LocalDateTime.now().toString());
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleUnreadableMessage(HttpMessageNotReadableException ex) {
+        return ResponseEntity.badRequest()
+                .body(new ErrorResponse("ValidationFailed", "Request body could not be parsed", OffsetDateTime.now(), Map.of()));
+    }
+
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    public record ErrorResponse(String code, String message, OffsetDateTime timestamp, Map<String, Object> details) {
     }
 }

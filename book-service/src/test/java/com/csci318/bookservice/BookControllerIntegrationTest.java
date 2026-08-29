@@ -1,5 +1,6 @@
 package com.csci318.bookservice;
 
+import com.csci318.bookservice.repository.BookRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -7,7 +8,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.HashMap;
@@ -27,6 +27,14 @@ public class BookControllerIntegrationTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private BookRepository bookRepository;
+
+    @BeforeEach
+    void resetData() {
+        bookRepository.deleteAll();
+    }
+
     @Test
     public void createBook_Success() throws Exception {
         Map<String, String> request = new HashMap<>();
@@ -44,6 +52,25 @@ public class BookControllerIntegrationTest {
     }
 
     @Test
+    public void createBook_Conflict_WhenDuplicateIsbn() throws Exception {
+        Map<String, String> request = new HashMap<>();
+        request.put("isbn", "978-0134685991");
+        request.put("title", "Effective Java");
+        request.put("author", "Joshua Bloch");
+
+        mockMvc.perform(post("/books")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/books")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code", is("Conflict")));
+    }
+
+    @Test
     public void createBook_BadRequest_MissingTitle() throws Exception {
         Map<String, String> request = new HashMap<>();
         request.put("isbn", "978-0000000001");
@@ -52,7 +79,8 @@ public class BookControllerIntegrationTest {
         mockMvc.perform(post("/books")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code", is("ValidationFailed")));
     }
 
     @Test
@@ -76,7 +104,8 @@ public class BookControllerIntegrationTest {
     @Test
     public void getBookByIsbn_NotFound() throws Exception {
         mockMvc.perform(get("/books/NON_EXISTENT_ISBN"))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code", is("ResourceNotFound")));
     }
 
     @Test
@@ -118,7 +147,8 @@ public class BookControllerIntegrationTest {
         mockMvc.perform(put("/books/999-9999999999")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(updateReq)))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code", is("ResourceNotFound")));
     }
 
     @Test
@@ -143,6 +173,7 @@ public class BookControllerIntegrationTest {
     @Test
     public void deleteBook_NotFound() throws Exception {
         mockMvc.perform(delete("/books/UNKNOWN_ISBN"))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code", is("ResourceNotFound")));
     }
 }
