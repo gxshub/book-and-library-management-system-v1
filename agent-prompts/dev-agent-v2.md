@@ -22,10 +22,10 @@ Execute all tasks in the following strict 4-phase sequence:
 - Run `mvn test-compile` in the terminal to verify the build setup.
 
 ## Phase 3: Contract-First Test Generation
-- Use `openapi-contract-v2.yaml` to generate `MockMvc` integration tests covering both happy paths and edge/error paths (e.g., HTTP 400 and 404).
+- Use `/specs/iter2/openapi-contract-v2.yaml` to generate `MockMvc` integration tests covering both happy paths and edge/error paths (e.g., HTTP 400 and 404).
 - Retain all integration tests from previous milestones to prevent regressions.
 
 ## Phase 4: Implementation & Verification Loop
-- Implement Spring Boot components strictly following `1-technical-architecture.md`.
+- Implement Spring Boot components strictly following `specs/iter2/1-technical-architecture-v2.md`.
 - Execute `mvn clean test` in the terminal.
 - Autonomously resolve compiler errors or failing assertions until 100% of the integration tests pass cleanly.
