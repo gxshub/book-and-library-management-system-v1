@@ -5,15 +5,9 @@ The goal is to show how requirements can move from written specs to an implement
 -->
 ## Changes in Iteration 2
 
+- Expanded User Stories in Library Service
 - **CQRS Application Architecture**: Separated Library Service into Command Application Services (state mutation via aggregate roots) and Query Application Services (read-only projections).
-- **Event Sourcing for Inventory**: Implemented event sourcing for `InventoryAggregate`, recording immutable state transition events (`InventoryCopyReserved`, `InventoryCopyReleased`, `InventoryAdjusted`, `InventoryTransferredOut`, `InventoryTransferredIn`) and projecting to `inventory_read_model`.
-- **Expanded Circulation & Administrative Workflows (L1–L13)**:
-  - Reservation Hold Queue management (FIFO position allocation & cancellation).
-  - Loan Renewals (max renewal policy enforcement and hold conflict checks).
-  - Customer Active Loans and Library Overdue Loans reporting.
-  - Exception Reporting (lost or damaged book copy reporting).
-  - Stock Management (manual inventory adjustments and inter-branch copy transfers).
-  - Financial Ledger (overdue fine assessment, payments, and librarian waivers).
+- Implemented **Event Sourcing** for the `InventoryAggregate` in the Library Service.
 
 ## Project Intention
 
