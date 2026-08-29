@@ -5,8 +5,9 @@ CRITICAL BOUNDARY: The `/specs/iter2` directory is STRICTLY READ-ONLY for you. Y
 
 ## Codebase Strategy
 - The existing codebase from Iteration 1 is a valid starting point.
-- Refactor or replace any Iteration 1 components that conflict with Iteration 2 architecture.
-- Do NOT preserve Iteration 1 patterns documents where they contradict specifications in Iteration 2.
+- Refactor or replace any Iteration 1 components that conflict with Iteration 2 specifications.
+- Do NOT preserve Iteration 1 patterns where they contradict specifications in Iteration 2.
+- Remove any Iteration 1 code that is not required by Iteration 2 specifications.
 - Only use the openAPI contract document in Iteration 2 as the source of truth for API endpoints and request/response contracts.
 
 # Execution Pipeline
@@ -27,5 +28,6 @@ Execute all tasks in the following strict 4-phase sequence:
 
 ## Phase 4: Implementation & Verification Loop
 - Implement Spring Boot components strictly following `specs/iter2/1-technical-architecture-v2.md`.
+- Implement domain classes strictly following `specs/iter2/*-domain-models-*.md`. The subpackages must reflect the domain class types (e.g., `aggregate`, `entity`, `valueobject`, `repository`, `domainservice`, `event`).
 - Execute `mvn clean test` in the terminal.
 - Autonomously resolve compiler errors or failing assertions until 100% of the integration tests pass cleanly.
